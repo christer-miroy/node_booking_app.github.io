@@ -5,8 +5,10 @@
 /* input field default styling */
 input[type='text'],
 input[type='password'],
-input[type='email'] {
-  @apply w-full border my-2 py-2 px-3 rounded-2xl;
+input[type='email'],
+input[type='number'],
+textarea {
+  @apply w-full border my-1 py-2 px-3 rounded-2xl;
 }
 
 button {

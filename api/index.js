@@ -5,6 +5,9 @@ const User = require('./models/User'); //alias of UserModel
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser'); //read cookies
+const imageDownloader = require('image-downloader');
+const multer = require('multer');
+const fs = require('fs'); //rename files on the server
 
 require('dotenv').config();
 
@@ -12,13 +15,14 @@ const app = express();
 
 /* middlewares */
 app.use(express.json()); //parse json data
+app.use(cookieParser()); //read cookies
+app.use('/uploads', express.static(__dirname + '/uploads'));
 app.use(
   cors({
     credentials: true,
     origin: 'http://localhost:5173',
   }),
 );
-app.use(cookieParser()); //read cookies
 
 //connect to database
 mongoose.connect(process.env.MONGO_URL);
@@ -101,6 +105,48 @@ app.get('/profile', (req, res) => {
   } else {
     res.json(null);
   }
+});
+
+//logout endpoint
+app.post('/logout', (req, res) => {
+  //reset cookie
+  res.cookie('token', '').json(true);
+});
+
+//upload image from link endpoint
+app.post('/upload-by-link', async (req, res) => {
+  const { link } = req.body; //grab link
+  const newName = 'photo' + Date.now() + '.jpg'; //change name
+
+  await imageDownloader.image({
+    url: link,
+    dest: __dirname + '/uploads/' + newName, //destination
+  });
+
+  res.json(newName);
+});
+
+//define upload functionality
+const photosMiddleware = multer({ dest: 'uploads/' });
+
+//upload photos from file (install multer)
+app.post('/upload', photosMiddleware.array('photos', 100), (req, res) => {
+  //create an array of uploaded files
+  const uploadedFiles = [];
+  for (let i = 0; i < req.files.length; i++) {
+    const { path, originalname } = req.files[i];
+    //grab extension name of the file
+    const parts = originalname.split('.');
+    const ext = parts[parts.length - 1];
+
+    //get path of the specific file (require fs)
+    const newPath = path + '.' + ext;
+    fs.renameSync(path, newPath);
+
+    //add to uploadedFiles array
+    uploadedFiles.push(newPath.replace('uploads\\', ''));
+  }
+  res.json(uploadedFiles);
 });
 
 app.listen(4000);

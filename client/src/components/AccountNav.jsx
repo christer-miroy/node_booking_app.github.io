@@ -1,38 +1,12 @@
-import { useContext, useState } from 'react';
-import { UserContext } from '../context/UserContext';
-import { Link, Navigate, useParams } from 'react-router-dom';
-import axios from 'axios';
-import PlacesPage from './PlacesPage';
+import { Link, useLocation } from 'react-router-dom';
 
-export default function AccountPage() {
-  const [redirect, setRedirect] = useState(null); //redirect to home page upon logout
-  const { ready, user, setUser } = useContext(UserContext);
-  //subpages
-  let { subpage } = useParams();
+export default function AccountNav() {
+  const { pathname } = useLocation();
+
+  //grab the string after the second slash (e.g. /account/bookings or /account/places)
+  let subpage = pathname.split('/')?.[2];
   if (subpage === undefined) {
     subpage = 'profile';
-  }
-
-  //logout
-  async function logout() {
-    await axios.post('/logout');
-    //redirect to homepage
-    setRedirect('/');
-    //reset user data
-    setUser(null);
-  }
-
-  if (!ready) {
-    return 'Loading...';
-  }
-
-  //account page should not be visible if the user is not logged in
-  if (ready && !user && !redirect) {
-    return <Navigate to={'/login'} />;
-  }
-
-  if (redirect) {
-    return <Navigate to={redirect} />;
   }
 
   //return classes for active links
@@ -50,7 +24,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div>
+    <>
       <nav className="w-full flex justify-center mt-8 gap-2 mb-8">
         <Link className={linkClasses('profile')} to={'/account'}>
           {/* user icon */}
@@ -107,15 +81,6 @@ export default function AccountPage() {
           Accommodations
         </Link>
       </nav>
-      {subpage === 'profile' && (
-        <div className="text-center max-w-lg mx-auto">
-          Logged in as {user.name} ({user.email})<br />
-          <button className="primary max-w-sm mt-2" onClick={logout}>
-            Log out
-          </button>
-        </div>
-      )}
-      {subpage === 'places' && <PlacesPage />}
-    </div>
+    </>
   );
 }

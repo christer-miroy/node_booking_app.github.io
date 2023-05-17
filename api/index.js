@@ -1,13 +1,17 @@
 const express = require('express');
 var cors = require('cors'); //communicate with client
 const { default: mongoose } = require('mongoose');
-const User = require('./models/User'); //alias of UserModel
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser'); //read cookies
 const imageDownloader = require('image-downloader');
 const multer = require('multer');
 const fs = require('fs'); //rename files on the server
+
+/* import models */
+const User = require('./models/User'); //alias of UserModel
+const Place = require('./models/Place'); //place model
 
 require('dotenv').config();
 
@@ -147,6 +151,52 @@ app.post('/upload', photosMiddleware.array('photos', 100), (req, res) => {
     uploadedFiles.push(newPath.replace('uploads\\', ''));
   }
   res.json(uploadedFiles);
+});
+
+/* add new place/accommodation */
+app.post('/places', (req, res) => {
+  //get the logged in user data
+  const { token } = req.cookies;
+  const {
+    title,
+    address,
+    addedPhotos,
+    description,
+    perks,
+    extraInfo,
+    checkIn,
+    checkOut,
+    maxGuest,
+  } = req.body;
+
+  jwt.verify(token, jwtSecret, {}, async (err, userData) => {
+    if (err) throw err;
+    const placeDoc = await Place.create({
+      owner: userData.id, //logged-in id == owner
+      title,
+      address,
+      addedPhotos,
+      description,
+      perks,
+      extraInfo,
+      checkIn,
+      checkOut,
+      maxGuest,
+    });
+
+    res.json(placeDoc);
+  });
+});
+
+/* display all places */
+app.get('/places', (req, res) => {
+  //get the user details
+  const { token } = req.cookies;
+  jwt.verify(token, jwtSecret, {}, async (err, userData) => {
+    //get the user id
+    const { id } = userData;
+    res.json(await Place.find({ owner: id }));
+  });
 });
 
 app.listen(4000);

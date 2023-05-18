@@ -4,10 +4,12 @@ import Perks from '../components/Perks';
 import PhotosUploader from '../components/PhotosUploader';
 import AccountNav from '../components/AccountNav';
 import { Navigate, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export default function PlacesFormPage() {
   //get the place id
   const { id } = useParams();
+  console.log({ id });
 
   //default values
   const [title, setTitle] = useState('');
@@ -20,6 +22,24 @@ export default function PlacesFormPage() {
   const [checkOut, setCheckOut] = useState('');
   const [maxGuest, setMaxGuest] = useState(1);
   const [redirect, setRedirect] = useState(false);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+    axios.get('/places/' + id).then((response) => {
+      const { data } = response;
+      setTitle(data.title);
+      setAddress(data.address);
+      setAddedPhotos(data.photos);
+      setDescription(data.description);
+      setPerks(data.perks);
+      setExtraInfo(data.extraInfo);
+      setCheckIn(data.checkIn);
+      setCheckOut(data.checkOut);
+      setMaxGuest(data.maxGuest);
+    });
+  }, [id]);
 
   /* dynamic header and paragraph with uniform styling */
   function inputHeader(text) {
@@ -39,10 +59,10 @@ export default function PlacesFormPage() {
     );
   }
 
-  /* add new place */
-  async function addNewPlace(ev) {
+  /* add new place / edit new place */
+  async function savePlace(ev) {
     ev.preventDefault();
-    await axios.post('/places', {
+    const placeData = {
       title,
       address,
       addedPhotos,
@@ -52,8 +72,24 @@ export default function PlacesFormPage() {
       checkIn,
       checkOut,
       maxGuest,
-    });
-    setRedirect(true);
+    };
+
+    if (id) {
+      //update existing place
+      await axios.put('/places', {
+        id,
+        ...placeData,
+      });
+
+      setRedirect(true);
+    } else {
+      //add new place
+      await axios.post('/places', {
+        ...placeData,
+      });
+
+      setRedirect(true);
+    }
   }
 
   if (redirect) {
@@ -64,7 +100,7 @@ export default function PlacesFormPage() {
     <>
       <div>
         <AccountNav />
-        <form onSubmit={addNewPlace}>
+        <form onSubmit={savePlace}>
           {preInput('Title', 'Title of the place')}
           <input
             type="text"

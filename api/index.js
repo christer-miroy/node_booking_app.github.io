@@ -160,7 +160,7 @@ app.post('/places', (req, res) => {
   const {
     title,
     address,
-    addedPhotos,
+    photos: addedPhotos,
     description,
     perks,
     extraInfo,
@@ -196,6 +196,53 @@ app.get('/places', (req, res) => {
     //get the user id
     const { id } = userData;
     res.json(await Place.find({ owner: id }));
+  });
+});
+
+//display single place
+app.get('/places/:id', async (req, res) => {
+  const { id } = req.params;
+  res.json(await Place.findById(id));
+});
+
+//update place endpoint
+app.put('/places', async (req, res) => {
+  //get the logged in user data
+  const { token } = req.cookies;
+  const {
+    id,
+    title,
+    address,
+    addedPhotos,
+    description,
+    perks,
+    extraInfo,
+    checkIn,
+    checkOut,
+    maxGuest,
+  } = req.body;
+
+  //place owner is the same as user id inside the token
+  jwt.verify(token, jwtSecret, {}, async (err, userData) => {
+    if (err) throw err;
+    const placeDoc = await Place.findById(id);
+    // console.log(userData.id === placeDoc.owner.toString());
+
+    if (userData.id === placeDoc.owner.toString()) {
+      placeDoc.set({
+        title,
+        address,
+        photos: addedPhotos,
+        description,
+        perks,
+        extraInfo,
+        checkIn,
+        checkOut,
+        maxGuest,
+      });
+      await placeDoc.save();
+      res.json('ok');
+    }
   });
 });
 
